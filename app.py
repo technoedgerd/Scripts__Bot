@@ -43,20 +43,34 @@ def home():
 # --------------------------------------------------
 # IMAGE GENERATION (Pexels)
 # --------------------------------------------------
-@app.post("/generate-image")
-def generate_image(payload: MediaRequest):
+@app.post("/media-generate")
+def generate_image(payload: dict):
+    """
+    Expected payload:
+    {
+      "type": "image",
+      "prompt": "NEET students studying online",
+      "orientation": "landscape"
+    }
+    """
 
-    if payload.type != "image":
-        raise HTTPException(status_code=400, detail="Only image type supported")
+    media_type = payload.get("type")
+    prompt = payload.get("prompt")
+
+    if media_type != "image":
+        return {"error": "Only image generation supported"}
+
+    if not prompt:
+        return {"error": "prompt is required"}
 
     headers = {
-        "Authorization": PEXELS_API_KEY
+        "Authorization": os.getenv("PEXELS_API_KEY")
     }
 
     params = {
-        "query": payload.prompt,
+        "query": prompt,
         "per_page": 1,
-        "orientation": payload.orientation
+        "orientation": payload.get("orientation", "landscape")
     }
 
     response = requests.get(
@@ -67,12 +81,12 @@ def generate_image(payload: MediaRequest):
     )
 
     if response.status_code != 200:
-        raise HTTPException(status_code=500, detail="Failed to fetch from Pexels")
+        return {"error": "Failed to fetch image from Pexels"}
 
     data = response.json()
 
     if not data.get("photos"):
-        raise HTTPException(status_code=404, detail="No images found")
+        return {"error": "No images found"}
 
     photo = data["photos"][0]
 
@@ -87,28 +101,29 @@ def generate_image(payload: MediaRequest):
 # VIDEO GENERATION (Example Structure)
 # Replace URL with your real video API
 # --------------------------------------------------
-@app.post("/generate-video")
-def generate_video(payload: MediaRequest):
+# @app.post("/generate-video")
+# def generate_video(payload: MediaRequest):
 
-    if payload.type != "video":
-        raise HTTPException(status_code=400, detail="Only video type supported")
+#     if payload.type != "video":
+#         raise HTTPException(status_code=400, detail="Only video type supported")
 
-    headers = {
-        "Authorization": f"Bearer {VIDEO_API_KEY}"
-    }
+#     headers = {
+#         "Authorization": f"Bearer {VIDEO_API_KEY}"
+#     }
 
-    body = {
-        "prompt": payload.prompt
-    }
+#     body = {
+#         "prompt": payload.prompt
+#     }
 
-    response = requests.post(
-        "https://your-video-api.com/generate",
-        headers=headers,
-        json=body,
-        timeout=20
-    )
+#     response = requests.post(
+#         "https://your-video-api.com/generate",
+#         headers=headers,
+#         json=body,
+#         timeout=20
+#     )
 
-    if response.status_code != 200:
-        raise HTTPException(status_code=500, detail="Video API failed")
+#     if response.status_code != 200:
+#         raise HTTPException(status_code=500, detail="Video API failed")
 
-    return response.json()
+#     return response.json()
+
